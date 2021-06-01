@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.deployment.name }}
+  labels:
+    app: rails
+spec:
+  replicas: {{ .Values.app.deployment.replicas }}
+  strategy:
+    type: {{ .Values.app.deployment.strategy }}
+    rollingUpdate:
+      maxSurge: {{ .Values.app.deployment.maxSurge }}
+      maxUnavailable: {{ .Values.app.deployment.maxUnavailable }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.deployment.selector }}
+  template:
+    metadata:
+      labels:
+        app: rails
+    spec:
+      containers:
+      - name: {{ .Values.app.deployment.containerName }} 
+        image: {{ .Values.app.deployment.image }}
+        imagePullPolicy: {{ .Values.app.deployment.imagePullPolicy }}
+        resources:
+          limits:
+            cpu: {{ .Values.app.deployment.cpuLimit }}
+          requests:
+            cpu: {{ .Values.app.deployment.cpuRequest }}
+        env: 
+        - name: RAILS_ENV
+          value: "{{ .Values.app.deployment.env.railsEnv }}"
+        - name: MYSQL_HOST
+          value: "{{ .Values.app.deployment.env.mysqlHost }}"
+        - name: MYSQL_USERNAME
+          value: "{{ .Values.app.deployment.env.mysqlUsername }}"
+        - name: MYSQL_PASSWORD
+          value: "{{ .Values.app.deployment.env.mysqlPassword }}"
+        - name: ELASTICSEARCH
+          value: "{{ .Values.app.deployment.env.elasticsearch }}"
+        - name: RAILS_LOG_TO_STDOUT
+          value: "{{ .Values.app.deployment.env.railsLogToStdout }}"
+        ports:
+        - containerPort: {{ .Values.app.deployment.port }}
+      initContainers:
+      - name: run-migrations
+        image: {{ .Values.app.deployment.image }}
+        imagePullPolicy: {{ .Values.app.deployment.imagePullPolicy }}
+        command: ["rails", "db:migrate"]
+        env: 
+        - name: RAILS_ENV
+          value: "{{ .Values.app.deployment.env.railsEnv }}"
+        - name: MYSQL_HOST
+          value: "{{ .Values.app.deployment.env.mysqlHost }}"
+        - name: MYSQL_USERNAME
+          value: "{{ .Values.app.deployment.env.mysqlUsername }}"
+        - name: MYSQL_PASSWORD
+          value: "{{ .Values.app.deployment.env.mysqlPassword }}"
+        - name: ELASTICSEARCH
+          value: "{{ .Values.app.deployment.env.elasticsearch }}"
+        - name: RAILS_LOG_TO_STDOUT
+          value: "{{ .Values.app.deployment.env.railsLogToStdout }}"
+      

@@ -1,0 +1,109 @@
+# values for mysql
+mysql:
+  volume:
+    # storage: How big the pv and pvc will be
+    storage: 20Gi
+    # hostPath: where the pv will be created in the host machine
+    hostPath: "/mnt/data/mysql"
+  service:
+    # name: Name of the service
+    name: mysql
+    # port: Port that the service will be accessible
+    port: 3306
+    # selector: The app: <selector> tag that will be used to select pods
+    selector: mysql
+  deployment:
+    # name: Name of the deployment
+    name: mysql
+    # selector: The tag that will be used as app: <selector> and "connects" the service with the pod
+    selector: mysql
+    # strategyType: Deployment strategy
+    strategyType: Recreate
+    # labelsApp: Template metadata
+    labelsApp: mysql
+    # image: The image that will be used
+    image: mysql:5.7
+    # containerName: The container name
+    containerName: mysql
+    env:
+      # mysqlRootPassword: The password for the database
+      mysqlRootPassword: password
+      # mysqlDatabase: The name of the database that will be created
+      mysqlDatabase: backlog
+    # containerPort: The port that this container will be available
+    containerPort: 3306
+
+# values for elasticsearch
+elasticsearch:
+  volume:
+    # storage: How big the pv and pvc will be
+    storage: 10Gi
+    # hostPath: where the pv will be created in the host machine
+    hostPath: mnt/data/elastic
+  service:
+    # restPort: The port that elasticsearch will be available to receive requests
+    restPort: 9200
+    # interNodePort: The port that elasticsearch will receive request from other elasticsearch instances
+    interNodePort: 9300
+    # selector: The app: <selector> tag that will be used to select pods
+    selector: elasticsearch
+  statefulset:
+    # name: The name of the statefulset
+    name: es-cluster
+    # serviceName: Name of the service
+    serviceName: elasticsearch
+    # selector: The tag that will be used as app: <selector> and "connects" the service with the pod
+    selector: elasticsearch
+    # replicas: Number of replicas
+    replicas: 1
+    # containerName: The container name
+    containerName: elasticsearch
+    # image: The image that will be used
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.0
+    # cpuLimit: The cpu limit for the elasticsearch container
+    cpuLimit: 500m
+    # cpuRequest: The initial cpu request for the elasticsearch container
+    cpuRequest: 100m
+    # restPorst: The port that will allow clients to communicate with the container
+    restPort: 9200
+    # interNodePort: The port that will allow other ES containers to communicate.
+    interNodePort: 9300
+    env:
+      # clusterName: The name of the ES cluster
+      clusterName: docker-cluster
+      # networkHost: NetworkHost options
+      networkHost: "_site_,_lo_"
+      # discoveryType: The type that the container will run
+      discoveryType: single-node
+      # memoryLock: If we want to lock the ES memory
+      memoryLock: "true"
+      # javaOpts: Optimise JVM options
+      javaOpts: "-Xms512m -Xmx512m"
+
+app:
+  service:
+    name: rails
+    port: 3000
+    selector: rails
+  deployment:
+    name: rails-deployment
+    replicas: 1
+    strategy: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 1
+    selector: rails
+    containerName: rails
+    image: my-rails-app
+    imagePullPolicy: Never
+    cpuLimit: 1000m
+    cpuRequest: 500m
+    env:
+      railsEnv: development
+      mysqlHost: mysql
+      mysqlUsername: root
+      mysqlPassword: password
+      elasticsearch: "elasticseach:9200"
+      railsLogToStdout: "true"
+    port: 3000
+
+

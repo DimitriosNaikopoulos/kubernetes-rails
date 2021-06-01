@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.elasticsearch.statefulset.name }}
+spec:
+  serviceName: {{ .Values.elasticsearch.statefulset.serviceName }}
+  replicas: {{ .Values.elasticsearch.statefulset.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.elasticsearch.statefulset.selector }}
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+      - name: {{ .Values.elasticsearch.statefulset.containerName }}
+        image: {{ .Values.elasticsearch.statefulset.image }}
+        resources:
+            limits:
+              cpu: {{ .Values.elasticsearch.statefulset.cpuLimit }}
+            requests:
+              cpu: {{ .Values.elasticsearch.statefulset.cpuRequest }}
+        ports:
+        - containerPort: {{ .Values.elasticsearch.statefulset.restPort }}
+          name: rest
+          protocol: TCP
+        - containerPort: {{ .Values.elasticsearch.statefulset.interNodePort }}
+          name: inter-node
+          protocol: TCP
+        volumeMounts:
+        - name: elasticsearch-persistent-storage
+          mountPath: /usr/share/elasticsearch/data
+        env:
+          - name: cluster.name
+            value: "{{ .Values.elasticsearch.statefulset.env.clusterName }}"
+          - name: "NETWORK_HOST"
+            value: "{{ .Values.elasticsearch.statefulset.env.networkHost }}"
+          - name: node.name
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: discovery.type
+            value: "{{ .Values.elasticsearch.statefulset.env.discoveryType }}"
+          - name: bootstrap.memory_lock
+            value: "{{ .Values.elasticsearch.statefulset.env.memoryLock }}"
+          - name: ES_JAVA_OPTS
+            value: "{{ .Values.elasticsearch.statefulset.env.javaOpts }}"
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"]
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: elasticsearch-persistent-storage
+          mountPath: /usr/share/elasticsearch/data
+      - name: increase-vm-max-map
+        image: busybox
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      - name: increase-fd-ulimit
+        image: busybox
+        command: ["sh", "-c", "ulimit -n 65536"]
+        securityContext:
+          privileged: true
+      volumes:
+      - name: elasticsearch-persistent-storage
+        persistentVolumeClaim:
+          claimName: elasticsearch-pv-volume

@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rails
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: rails
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rails-deployment
+  labels:
+    app: rails
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: rails
+  template:
+    metadata:
+      labels:
+        app: rails
+    spec:
+      containers:
+      - name: rails 
+        image: my-rails-app
+        imagePullPolicy: Never
+        resources:
+          limits:
+            cpu: 1000m
+          requests:
+            cpu: 500m
+        env: 
+        - name: RAILS_ENV
+          value: development
+        - name: MYSQL_HOST
+          value: 'mysql'
+        - name: MYSQL_USERNAME
+          value: root
+        - name: MYSQL_PASSWORD
+          value: password
+        - name: ELASTICSEARCH
+          value: 'elasticsearch:9200'
+        - name: RAILS_LOG_TO_STDOUT
+          value: 'true'
+        ports:
+        - containerPort: 3000
+      
